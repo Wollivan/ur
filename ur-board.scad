@@ -1,10 +1,13 @@
-squareWidth = 40;
-height = 20;
+use <fonts/Quicksand-VariableFont_wght.ttf>
+
+squareWidth = 25;
+pieceWidth = squareWidth / 3;
 boardX = squareWidth * 8;
 boardY = squareWidth * 3;
 lineThickness = 1;
 radius = 3;
 wall = 4;
+height = (wall * 4) + 1; // bottom, space for pieces, space for lid
 
 // rotate as per a, v, but around point pt
 module rotate_about_pt(z, y, pt) {
@@ -55,21 +58,11 @@ module cornerOutline() {
     }
 }
 
-module rosetteCutout() {
-  translate([wall,wall,height])
-    scale([0.068, 0.068, 1])
-      import("rosette.svg", center=false, convexity=10);
-}
-module tile(rosette=false) {
+module tile() {
   difference() {
       // Base square
       cube([squareWidth, squareWidth, height]);   
       outline();
-
-      // rosette cutout
-      if(rosette == true) {
-        rosetteCutout();
-      }
   }
 }
 
@@ -78,14 +71,10 @@ module tileNoOutline() {
   cube([squareWidth, squareWidth, height]);
 }
 
-module cornerTile(rosette=false) {
+module cornerTile() {
   difference () {
    shell(squareWidth, height);
     cornerOutline();
-    // rosette cutout
-      if(rosette == true) {
-        rosetteCutout();
-      }
   }
 }
 
@@ -96,15 +85,11 @@ module sectionOne() {
       for (y = [0 : 2]) {
         if(x==0 && y ==0){
           // bottm left corner
-          rotate_about_pt(0,0,[squareWidth/2+1.5, squareWidth/2+1.5,0]) cornerTile(true);
+          rotate_about_pt(0,0,[squareWidth/2+1.5, squareWidth/2+1.5,0]) cornerTile();
         }else if(x==0 && y ==2){
           // top left corner
           translate([x * squareWidth, y * squareWidth, 0])
-            rotate_about_pt(-90,0,[squareWidth/2, squareWidth/2,0]) cornerTile(true);
-        }else if(x==3 && y ==1){
-          // top left corner
-          translate([x * squareWidth, y * squareWidth, 0])
-            tile(true);
+            rotate_about_pt(-90,0,[squareWidth/2, squareWidth/2,0]) cornerTile();
         }else{
           translate([x * squareWidth, y * squareWidth, 0]) tile();
         }
@@ -153,14 +138,6 @@ module sectionThree() {
             // top right corner
             translate([x * squareWidth, y * squareWidth, 0])
               rotate_about_pt(180,0,[squareWidth/2, squareWidth/2,0]) cornerTile();
-          }else if(x==0 && y ==0){
-            // top right corner
-            translate([x * squareWidth, y * squareWidth, 0])
-              tile(true);
-          }else if(x==0 && y ==2){
-            // top right corner
-            translate([x * squareWidth, y * squareWidth, 0])
-              tile(true);
           }else{
             translate([x * squareWidth, y * squareWidth, 0]) tile();
           }
@@ -197,33 +174,26 @@ module sectionThreeLid() {
 module gamePieces() {
   // 7 game pieces
   for (i = [0 : 6]) {
-    translate([i * (squareWidth/2+2), 0, 0])
-      cylinder(r=squareWidth/4, h=wall*2, $fn=50);
+    translate([i * (squareWidth/2+5), 0, 0])
+      cylinder(r=pieceWidth, h=wall, $fn=50);
   }
 }
 
 module urDice() {
  // a cube with a pattern on one side
   difference() {
-    cube([squareWidth/2, wall*2, wall*2]);
+    cylinder(r=pieceWidth, h=wall, $fn=50, center=true);
     
-    // pattern of 4 intersection circles on the side
-    for (i = [0 : 1]) {
-      translate([squareWidth/16, (-wall*2*i) + wall*3, (wall*3)/100])
-      for (x = [0: 6]) {
-          translate([squareWidth/16 * x, -wall+0.5, wall])
-            rotate([90, 0, 0])
-              cylinder(r=squareWidth/24, h=1, $fn=30);
-        }
-    }
+    translate([0,-pieceWidth,wall/2-1])
+      linear_extrude(wall*2)
+        text("*",30,font="Quicksand",halign="center", valign="center");
   }
-
 }
 
 module fourDice() {
  // 4 dice in a row
   for (i = [0 : 3]) {
-    translate([i * (squareWidth/2+2), 0, 0])
+    translate([i * (squareWidth/2+5), 0, 0])
       urDice();
   }
 }
@@ -242,6 +212,12 @@ module boardHollow() {
   }
 }
 
+module rosetteCutout() {
+  translate([wall,-wall*4.5,height-1])
+      linear_extrude(wall*2)
+        text("*",40,font="Quicksand");
+}
+
 module boardLid() {
   difference() {
     union() {
@@ -250,11 +226,25 @@ module boardLid() {
       topOfItem() sectionThree();
       // pressure fit portion of lid that fits into the hollow section
       translate([wall, wall, height-wall*2])
-        cube([boardX - wall*2, boardY - wall*2, wall]);
+        cube([boardX - wall*2-0.2, boardY - wall*2-0.2, wall]);
     }
     
-    //
+    // rossettes using rosette cutout 
+    translate([0, 0, 0])
+      rosetteCutout();
+    translate([0, squareWidth*2, 0])
+      rosetteCutout();
+
+    translate([squareWidth*3, squareWidth, 0])
+      rosetteCutout();
+
+    translate([squareWidth*6, 0, 0])
+      rosetteCutout();
+    translate([squareWidth*6, squareWidth*2, 0])
+      rosetteCutout();
+
   }
+  
 }
 
 boardHollow();
@@ -264,7 +254,7 @@ boardLid();
 
 translate([0, - (squareWidth/2 + 10), 0])
 gamePieces();
-translate([boardX - (squareWidth * 4), - (squareWidth/2 + 10), 0])
+translate([boardX - (squareWidth * 3), - (squareWidth/2 + 10), 0])
 fourDice();
 
 // space inside box is

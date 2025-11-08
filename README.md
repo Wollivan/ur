@@ -2,4 +2,4 @@
 
 S'game, init.
 
-![v2 of game](./v2.png)
+![v4 of game](./images/v4.png)
